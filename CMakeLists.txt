@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 3.20)
 
 project(SceneForge LANGUAGES C CXX)
 
-add_executable(sceneforge src/main.cpp)
+add_executable(sceneforge 
+    src/main.cpp
+    src/VertexBuffer.cpp
+    )
 target_compile_features(sceneforge PRIVATE cxx_std_17)
 
 include(FetchContent)
