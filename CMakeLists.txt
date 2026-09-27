@@ -5,6 +5,7 @@ project(SceneForge LANGUAGES C CXX)
 add_executable(sceneforge 
     src/main.cpp
     src/VertexBuffer.cpp
+    src/VertexArray.cpp
     )
 target_compile_features(sceneforge PRIVATE cxx_std_17)
 

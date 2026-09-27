@@ -5,7 +5,7 @@
 class VertexBuffer
 {
 public:
-    VertexBuffer(const float* vert, GLsizeiptr BytesSize);
+    VertexBuffer(const float* vert, GLsizeiptr bytesSize);
     ~VertexBuffer();
 
     VertexBuffer(const VertexBuffer& other) = delete;
