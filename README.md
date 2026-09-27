@@ -2,17 +2,20 @@
 
 A C++17 and OpenGL project growing into a small 3D scene editor.
 
-SceneForge is developed one milestone at a time, with a focus on understanding the rendering pipeline, resource ownership, and application architecture. The current milestone is **M0 — Setup and first triangle**: a GLFW window rendering a triangle with a position-based color gradient.
+SceneForge is developed one milestone at a time, with a focus on understanding the rendering pipeline, resource ownership, and application architecture. The current milestone is **M1 — Renderer foundations and RAII**, in progress. The demo renders a cube with a position-based RGB gradient.
 
 ## Current features
 
 - OpenGL 3.3 core context created with GLFW.
 - OpenGL function loading through GLAD.
+- A cube made of 36 non-indexed vertices: two triangles per face.
 - Vertex data stored in a VBO and configured through a VAO.
-- Vertex and fragment shaders written in GLSL 330 core.
+- Vertex and fragment shaders loaded from GLSL 330 core source files.
 - Shader compilation and program linking with error logs.
-- A render loop with framebuffer clearing, drawing, buffer swapping, and event handling.
-- Manual OpenGL resource cleanup and a GLFW shutdown guard.
+- RAII ownership for shader programs, vertex buffers, and vertex arrays, with copying disabled.
+- Fixed rotations around X and Y, depth testing, and a centered square viewport sized to the framebuffer.
+- A render loop with color and depth clearing, drawing, buffer swapping, and event handling.
+- A GLFW shutdown guard.
 - CMake dependency fetching for GLFW and GLAD.
 
 ## Build and run
@@ -49,7 +52,7 @@ cmake --build build --parallel
 ./build/sceneforge
 ```
 
-The application opens a **1280 × 720** window with a red/green gradient triangle on a black background. Close the window to exit.
+The application opens a **1280 × 720** window with a statically rotated RGB gradient cube on a black background. Close the window to exit. Run from the repository root so the relative paths to the shader files resolve correctly.
 
 Generated files and downloaded dependencies are placed under `build/`.
 
@@ -62,38 +65,49 @@ Generated files and downloaded dependencies are placed under `build/`.
 | The first configuration fails while fetching dependencies | Check that Git is installed and GitHub is reachable. |
 | GLFW cannot create the window or OpenGL context | Run in a graphical session and check that the driver supports OpenGL 3.3 core. Read the GLFW error printed to the terminal. |
 
-## How the triangle is rendered
+## How the cube is rendered
 
-The current rendering path is deliberately small enough to follow in [`src/main.cpp`](src/main.cpp):
+The rendering setup and loop live in [`src/main.cpp`](src/main.cpp), with resource ownership handled by the `VertexBuffer`, `VertexArray`, and `Shader` wrappers:
 
 1. GLFW creates the window and makes its OpenGL context current.
 2. GLAD loads the OpenGL function pointers.
-3. Three vertex positions are uploaded to a VBO. A VAO describes the three-component position attribute at location `0`.
-4. The vertex and fragment shaders are compiled and linked into a program.
-5. Each frame clears the framebuffer, selects the program and VAO, draws three vertices, and presents the result.
+3. The cube's 36 vertex positions are uploaded to a VBO. A VAO describes the three-component position attribute at location `0`.
+4. `Shader` loads the vertex and fragment source files, compiles them, and links the program.
+5. Each frame fits a centered square viewport to the framebuffer, clears color and depth, selects the program and VAO, draws 36 vertices, and presents the result.
+6. The resource wrappers are destroyed before the window and its OpenGL context.
 
-The vertex shader writes the clip-space position and passes the original position to the fragment shader. Rasterization interpolates that position across the triangle. The fragment shader calculates red from `x + 0.5`, green from `y + 0.5`, and blue from `z`.
+The vertex shader applies fixed rotations around X and Y to produce clip-space coordinates. It also passes the original local position to the fragment shader. Rasterization interpolates this position, and the fragment shader maps it to RGB with `vertexPosition + 0.5`. Each local coordinate ranges from `-0.5` to `0.5`, giving color values from `0` to `1`.
 
-For the current geometry, X and Y range from `-0.5` to `0.5`, so the red and green channels range from `0` to `1`. All Z coordinates are zero, so the blue channel stays at zero.
+Fixed rotation and depth testing provide a simple cube demo before the camera and transform system planned for M2. The shader files retain their original names, `shaders/triangle.vert` and `shaders/triangle.frag`.
 
 ## Project structure
 
 ```text
 SceneForge/
-├── CMakeLists.txt    # Executable, language standard, and dependencies
+├── CMakeLists.txt       # Executable, language standard, and dependencies
 ├── README.md
+├── shaders/
+│   ├── triangle.vert   # Fixed cube rotation and local position output
+│   └── triangle.frag   # Position-based RGB gradient
 └── src/
-    └── main.cpp     # Window setup, OpenGL initialization, shaders, and rendering
+    ├── main.cpp        # Window, initialization, cube geometry, and render loop
+    ├── constants.hpp   # Window dimensions and development settings
+    ├── Shader.hpp      # Shader program ownership and interface
+    ├── Shader.cpp
+    ├── VertexBuffer.hpp
+    ├── VertexBuffer.cpp
+    ├── VertexArray.hpp
+    └── VertexArray.cpp
 ```
 
-At M0, initialization and rendering live in one file. M1 will introduce RAII wrappers as a focused exercise in ownership, resource lifetime, and move semantics.
+The first triangle completed M0. M1 now includes a cube and non-copyable RAII wrappers for the shader program, VBO, and VAO. **IndexBuffer/EBO support and move semantics remain to complete M1.**
 
 ## Roadmap
 
 | Milestone | Focus | Status |
 | --- | --- | --- |
-| **M0** | GLFW, GLAD, CMake, first triangle, and basic error handling | **Current** |
-| M1 | RAII wrappers for shaders, buffers, and vertex arrays; a cube | Planned |
+| M0 | GLFW, GLAD, CMake, first triangle, and basic error handling | Complete |
+| **M1** | RAII wrappers, IndexBuffer/EBO, move semantics, and a cube | **Current** |
 | M2 | Transforms, camera controls, delta time, depth testing, and resizing | Planned |
 | M3 | Scene objects, multiple objects, and clear resource ownership | Planned |
 | M4 | Dear ImGui hierarchy and inspector panels; object editing | Planned |
