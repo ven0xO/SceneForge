@@ -6,6 +6,6 @@ out vec4 FragColor;
 
 void main()
 {
-    // Build an opaque color gradient from the interpolated position.
-    FragColor = vec4(vertexPosition.x + 0.5, vertexPosition.y + 0.5, vertexPosition.z, 1.0f);
+    // Map local positions from [-0.5, 0.5] to RGB colors in [0.0, 1.0].
+    FragColor = vec4(vertexPosition + vec3(0.5), 1.0);
 }
